@@ -13,7 +13,7 @@ IMPRESSORA_PORTA = 80
 
 # TODO: FIXME: FULL PATH
 NOVOS_DIR     = 'IMPRIMIR'
-IMPRESSOS_DIR = 'IMPRESSOS'
+IMPRESSOS_DIR = 'IMPRESSO'
 
 DB = cbor.loads(open('.DB.cbor', 'rb').read())
 
