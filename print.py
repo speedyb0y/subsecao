@@ -11,8 +11,9 @@ import hashlib
 IMPRESSORA_IP = '172.23.0.2'
 IMPRESSORA_PORTA = 80
 
-NOVOS_DIR     = '/home/speedyb0y/REMOTO-NOVOS'
-IMPRESSOS_DIR = '/home/speedyb0y/REMOTO-IMPRESSOS'
+# TODO: FIXME: FULL PATH
+NOVOS_DIR     = 'REMOTO-NOVOS'
+IMPRESSOS_DIR = 'REMOTO-IMPRESSOS'
 
 DB = cbor.loads(open('.DB.cbor', 'rb').read())
 
@@ -23,19 +24,19 @@ deletar = []
 
 # TODO: FIXME: REMOVER OS ARQUIVOS JÁ DELETADOS
 
-for novoName in sorted(os.listdir(NOVOS_DIR)):
+# TODO: FIXME: DAEMONIZAR, E USAR UM PAUSE() E EXECUTAR COM SIGNALS
 
-    ORIGINAL = f'{NOVOS_DIR}/{novoName}'
+for novo in sorted(os.listdir(NOVOS_DIR)):
+
+    ORIGINAL = f'{NOVOS_DIR}/{novo}'
 
     # IGNORA CERTOS ARQUIVOS
-    if novoName == 'teste.test':
+    if novo == 'teste.test':
         continue
 
     # IGNORA O QUE JÁ SABE QUE NÃO É PDF
-    if novoName.lower().endswith(('.txt', '.jpg', '.bmp', '.doc', '.docx', '.ppt', '.exe', '.zip', '.msi', '.rar', '.html', '.htm')):
+    if novo.lower().endswith(('.txt', '.jpg', '.bmp', '.doc', '.docx', '.ppt', '.exe', '.zip', '.msi', '.rar', '.html', '.htm')):
         continue
-
-    # stat
 
     # TODO: FIXME: LIMITAR TAMANHO DO ARQUIVO
     hash_= open(ORIGINAL, 'rb').read()
@@ -57,24 +58,47 @@ for novoName in sorted(os.listdir(NOVOS_DIR)):
     fd.close()
     text = b''.join(text)
 
-    #
-    if b'atesta a situa\xc3\xa7\xc3\xa3o cadastral,' in text:
-        tipo = 'CERTIDAO'
-    else:
-        tipo = ''
+    # TODO: FIXME: SOBRESCREVER COM A DATA DO ARQUIVO? :/
+    # NÃO, MELHOR CONSIDERAR A DATA EM QUE *NÓS* TRABALHAMOS COM O ARQUIVO
+    # OU ENTÃO, MANTER AMBAS AS DATAS
 
-    if False:
-        # EXTRAIR O NOME
-        titularNome = 'NOME DO TITULAR'
-    else:
-        titularNome = ''
+    inscricao = tipo = nome = ''
+    timestamp = now
+    detalhe = novo
+
+    # TODO: FIXME: BOLETOS E VENCIMENTO
+    # TODO: FIXME: ESPELHOS
+    # TODO: FIXME: TERMOS DE PARCELAMENTO
+    # TODO: FIXME: REQUERIMENTOS
+    # TODO: FIXME: FIXAS DE QUALIFICAÇÃO
+    if b'atesta a situa\xc3\xa7\xc3\xa3o cadastral,' in text:
+
+        tipo = 'CERTIDAO'
+
+        try:
+            nome = re.findall(b'Nome: ([^\n]*)', text)[0].decode()
+        except:
+            pass
+
+        try:
+            inscricao = re.findall(b'Inscri\xc3\xa7\xc3\xa3o: ([^\n]*)', text)[0].decode()
+        except:
+            pass
+
+        # TODO: FIXME: SITUAÇÃO
+        detalhe = ''
+
+        # TENTA USAR A DATA DA CERTIDÃO EM SI
+        try:
+            day, _, hours = re.findall(b'emitida em ([^.]*)', text)[0].split()
+            day, month, year, hours, mins, secs = map(int, (*day.split(b'/'), *hours.split(b':')))
+            timestamp = '%04d-%02d-%02d %02d:%02d:%02d' % (year, month, day, hours, mins, secs)
+        except:
+            pass
 
     del text
 
-    # TODO: FIXME: TENTAR EXIBIR COM A DATA DO ARQUIVO EM SI, SE FOR CONHECIDA
-    novoTime = 0
-
-    DB[hash_] = (now, novoTime, novoName, tipo, titularNome)
+    DB[hash_] = (timestamp, nome, inscricao, tipo, detalhe)
 
     ## TODO: FIXME: ŚO SE TIVER SUCESSO
     os.system(f'pdftocairo -pdf "{ORIGINAL}" {IMPRESSOS_DIR}/{hash_}')
@@ -90,11 +114,12 @@ os.rename('.DB.cbor.tmp', '.DB.cbor')
 for ORIGINAL in deletar:
     os.unlink(ORIGINAL)
 
-for hash_ in selecionados = os.popen('zenity --list --text="SELECIONE OS ARQUIVOS A IMPRIMIR" --ok-label="IMPRIMIR" --modal --title="IMPRIMIR" --width=700 --height=500 --print-column=1 --hide-column=1 --column=HASH --column=DATA --column=TIPO --column=NOME --column=ARQUIVO --multiple --separator=" " ' +
-    ' '.join(f'{hash_} "{adicionadoTime}" "{tipo}" "{titularNome}" "{novoName}"' for hash_, (adicionadoTime, novoTime, novoName, tipo, titularNome) in DB.items())
+for hash_ in os.popen('zenity --list --text="SELECIONE OS ARQUIVOS A IMPRIMIR" --ok-label="IMPRIMIR" --modal --title="IMPRIMIR" --width=900 --height=700 --print-column=1 --hide-column=1 --column=HASH --column=DATA --column=NOME --column=INSCRICAO --column=TIPO --column= --multiple --separator=" " ' +
+    ' '.join(f'{hash_} "{adicionadoTime}" "{nome}" "{inscricao}" "{tipo}" "{novo}"' for hash_, (adicionadoTime, nome, inscricao, tipo, novo) in DB.items())
     ).read()[:-1].split():
 
     # TODO: FIXME: DEPENDENDO DO QUE FOR, COLOCAR FRENTE E VERSO
+    # DEMAIS TIPOS, PERGUNTAR
 
     try:
         MENSAGEM = (
@@ -114,13 +139,17 @@ for hash_ in selecionados = os.popen('zenity --list --text="SELECIONE OS ARQUIVO
         print('FALHOU')
         continue
 
-    sock = socket.socket()
-    sock.connect((IMPRESSORA_IP, IMPRESSORA_PORTA))
-    sock.sendall(('POST /printer/print.cgi HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=@@@\r\n'
+    MENSAGEM = ('POST /printer/print.cgi HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=@@@\r\n'
         f'Host: {IMPRESSORA_IP}\r\n'
         f'Content-Length: {len(MENSAGEM)}\r\n'
         '\r\n'
-        ).encode() + MENSAGEM)
+        ).encode() + MENSAGEM
+
+    sock = socket.socket()
+    sock.connect((IMPRESSORA_IP, IMPRESSORA_PORTA))
+    sock.sendall(MENSAGEM)
+
+    del MENSAGEM
 
     while sock.recv(65536):
         pass
