@@ -110,21 +110,15 @@ for hash_ in selecionados = os.popen('zenity --list --text="SELECIONE OS ARQUIVO
             'Content-Disposition: form-data; name="WLS_UPLOAD_FILE"; filename="Boleto.PDF"\r\n'
             'Content-Type: application/pdf\r\n'
             '\r\n').encode() + open(f'{IMPRESSOS_DIR}/{hash_}', 'rb').read()
-    except: # TODO: FIXME: MENSAGEM DE ERRO AO FALHAR
+    except FileNotFoundError: # TODO: FIXME: MENSAGEM DE ERRO AO FALHAR
         print('FALHOU')
         continue
 
     sock = socket.socket()
     sock.connect((IMPRESSORA_IP, IMPRESSORA_PORTA))
-    sock.sendall((
-        'POST /printer/print.cgi HTTP/1.1\r\n'
+    sock.sendall(('POST /printer/print.cgi HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=@@@\r\n'
         f'Host: {IMPRESSORA_IP}\r\n'
-        'Accept: */*\r\n'
-        'Accept-Language: en-US,en;q=0.5\r\n'
-        'Accept-Encoding: gzip, deflate\r\n'
-        'Content-Type: multipart/form-data; boundary=---------------------------159599792230280882493265112558\r\n'
         f'Content-Length: {len(MENSAGEM)}\r\n'
-        'Connection: keep-alive\r\n'
         '\r\n'
         ).encode() + MENSAGEM)
 
