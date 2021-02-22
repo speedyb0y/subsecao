@@ -1,55 +1,77 @@
-#!/bin/sh
+#!/user/bin/python
 
-# 189.45.136.111
-# 192.168.1.4:10001
+import sys
+import os
+import time
 
-SCREEN_WIDTH=1920
-SCREEN_HEIGHT=1080
+def pipe (cmd):
 
+    r, w = os.pipe()
+
+    if not os.fork():
+        os.close(1)
+        os.close(r)
+        os.dup2(w, 1)
+        os.system(cmd)
+        exit(0)
+
+    os.close(w)
+
+    x = os.read(r, 128*1024*1024)[:-1]
+
+    os.close(r)
+
+    return x
+
+screenWidth = 1920
+screenHeight = 1080
+
+HOME='.'
 # TSserver.corenrj.local
-REMOTE_IP=172.16.0.26
-REMOTE_PORT=3389
-REMOTE_WIDTH=880
-REMOTE_HEIGHT=730
-REMOTE_DOMAIN=CORENRJ
-REMOTE_USER=willianbrito
-REMOTE_PASSWORD=$(zenity --password)
+remoteIP='172.16.0.26'
+remotePort = 3389
+remoteWidth = 880
+remoteHeight = 730
+remoteDomain = 'CORENRJ'
+remoteUser = 'willianbrito'
+remotePwd = pipe('zenity --password').decode()
 
-IMPRIMIR_DIR=${HOME}/IMPRIMIR
+printDir = f'{HOME}/IMPRIMIR'
 
-REMOTE_X=$[${SCREEN_WIDTH}-${REMOTE_WIDTH}]
+remoteX = screenWidth - remoteWidth
 
-(
-    while : ; do
+assert remoteIP
+assert 0 <= remotePort <= 0xFFFF
+assert remoteUser
+assert remotePwd
 
-        mkdir -p ${HOME}/REMOTO-NOVOS
-        # TODO: FIXME: IR ALTERNANDO
-        if : ; then
+while True:
 
-            xfreerdp \
-                /t:INCORP \
-                +clipboard \
-                -themes \
-                -decorations \
-                -wallpaper \
-                -mouse-motion \
-                -fonts \
-                /bpp:8 \
-                /d:${REMOTE_DOMAIN} \
-                /u:${REMOTE_USER} \
-                /p:${REMOTE_PASSWORD} \
-                /v:${REMOTE_IP}:${REMOTE_PORT} \
-                /w:${REMOTE_WIDTH} \
-                /h:${REMOTE_HEIGHT} \
-                /window-position:${REMOTE_X}x0 \
-                /drive:IMPRIMIR,${IMPRIMIR_DIR}
-        else
+    os.system(f'mkdir -p {printDir}')
 
-            rdesktop -D -T INCORP ${REMOTE_IP}:${REMOTE_PORT} -g ${REMOTE_WIDTH}x${REMOTE_HEIGHT}+${REMOTE_X}+0 -u ${REMOTE_DOMAIN}\\${REMOTE_USER} -p ${REMOTE_PASSWORD} -r disk:IMPRIMIR=${IMPRIMIR_DIR} -M -a 8 -z -P -x m
+    # TODO: FIXME: IR ALTERNANDO
+    if True:
 
-        fi
+        os.system('xfreerdp'
+            '/t:INCORP '
+            '+clipboard '
+            '-themes '
+            '-decorations '
+            '-wallpaper '
+            '-mouse-motion '
+            '-fonts '
+            '/bpp:8 '
+            f'/d:{remoteDomain} '
+            f'/u:{remoteUser} '
+            f'/p:{remotePwd} '
+            f'/v:{remoteIP}:{remotePort} '
+            f'/w:{remoteWidth} '
+            f'/h:{remoteHeight} '
+            f'/window-position:{remoteX}x0 '
+            f'/drive:IMPRIMIR,{printDir} '
+            )
+    else:
 
-        sleep 2
+        os.system(f'rdesktop -D -T INCORP {remoteIP}:{remotePort} -g {remoteWidth}x{remoteHeight}+{remoteX}+0 -u {remoteDomain}\\{remoteUser} -p {remotePwd} -r disk:IMPRIMIR={printDir} -M -a 8 -z -P -x m')
 
-    done
-) &
+    time.sleep(2)
