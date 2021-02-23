@@ -54,3 +54,25 @@ sleep 0.5
 parcellite &
 
 pidgin &
+
+######
+sudo tail /proc/sys/net/ipv4/ip_forward <<< 1
+sudo tail /proc/sys/net/ipv6/conf/default/forwarding <<< 1
+sudo tail /proc/sys/net/ipv6/conf/enp1s0/forwarding <<< 1
+
+sudo ip link set dev enp1s0 up
+
+sudo ip addr add 192.168.1.0/24 dev enp1s0
+sudo ip addr add 172.23.0.200/24 dev enp1s0
+
+sudo openvpn --config /etc/coren/openvpn.ovpn --auth-user-pass /etc/coren/auth &
+
+sudo pppd plugin /usr/lib/rp-pppoe/rp-pppoe.so nic-enp1s0 rp_pppoe_service velox noipdefault noauth default-asyncmap defaultroute hide-password nodetach mtu 1492 mru 1492 noaccomp nodeflate nopcomp novj novjccomp user 2422370921@oi.com.br lcp-echo-interval 20 lcp-echo-failure 3 &
+
+#iptables -t nat -A PREROUTING -p tcp --dport 9100 -j DNAT --to-destination 172.23.0.2:9100
+#iptables -t nat -A PREROUTING -p tcp --dport 8000 -j DNAT --to-destination 172.23.0.2:80
+sudo iptables -t nat -A POSTROUTING -o ppp0 -s 172.23.0.0/24 -j MASQUERADE
+#iptables -t nat -A POSTROUTING -o enp1s0 ! -s 192.168.1.0/24 -j MASQUERADE
+
+# MARQUERADE VPN
+#########
