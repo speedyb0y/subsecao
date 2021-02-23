@@ -64,8 +64,6 @@ assert 100 <= remoteHeight <= 20000
 
 while True:
 
-    os.system(f'mkdir -p {printDir}')
-
     # TODO: FIXME: AUTO DISCOVER IT
     screenWidth = 1920
     screenHeight = 1080
