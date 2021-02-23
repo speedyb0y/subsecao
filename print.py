@@ -30,12 +30,8 @@ for novo in sorted(os.listdir(NOVOS_DIR)):
 
     ORIGINAL = f'{NOVOS_DIR}/{novo}'
 
-    # IGNORA CERTOS ARQUIVOS
-    if novo == 'teste.test':
-        continue
-
     # IGNORA O QUE JÁ SABE QUE NÃO É PDF
-    if novo.lower().endswith(('.txt', '.jpg', '.bmp', '.doc', '.docx', '.ppt', '.exe', '.zip', '.msi', '.rar', '.html', '.htm')):
+    if novo.lower().endswith(('.txt', '.jpg', '.bmp', '.doc', '.docx', '.ppt', '.exe', '.zip', '.msi', '.rar', '.html', '.htm', '.test')):
         continue
 
     # TODO: FIXME: LIMITAR TAMANHO DO ARQUIVO
