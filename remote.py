@@ -17,16 +17,13 @@ def pipe (cmd):
 
     os.close(w)
 
+    # TODO: FIXME: KEEP READING
     x = os.read(r, 128*1024*1024)[:-1]
 
     os.close(r)
 
     return x
 
-screenWidth = 1920
-screenHeight = 1080
-
-HOME='.'
 # TSserver.corenrj.local
 remoteIP='172.16.0.26'
 remotePort = 3389
@@ -36,18 +33,26 @@ remoteDomain = 'CORENRJ'
 remoteUser = 'willianbrito'
 remotePwd = pipe('zenity --password').decode()
 
-printDir = f'{HOME}/IMPRIMIR'
+printDir = './IMPRIMIR'
 
-remoteX = screenWidth - remoteWidth
-
-assert remoteIP
-assert 0 <= remotePort <= 0xFFFF
-assert remoteUser
-assert remotePwd
+assert isinstance(printDir, str) and printDir
+assert isinstance(remoteIP, str) and remoteIP
+assert isinstance(remoteDomain, str)
+assert isinstance(remoteUser, str) and remoteUser
+assert isinstance(remotePwd, str) and remotePwd
+assert isinstance(remotePort, int) and 0 <= remotePort <= 0xFFFF
+assert 100 <= remoteWidth <= 20000
+assert 100 <= remoteHeight <= 20000
 
 while True:
 
     os.system(f'mkdir -p {printDir}')
+
+    # TODO: FIXME: AUTO DISCOVER IT
+    screenWidth = 1920
+    screenHeight = 1080
+
+    remoteX = screenWidth - remoteWidth
 
     # TODO: FIXME: IR ALTERNANDO
     if True:
